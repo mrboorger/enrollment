@@ -16,6 +16,17 @@ IMPORT_BATCHES = [
     {
         "items": [
             {
+                "type": "OFFER",
+                "name": "Товары",
+                "id": "069cb8d7-bbdd-47d3-ad8f-82ef4c269df5",
+                "price": 0
+            }
+        ],
+        "updateDate": "2002-02-01T12:00:00.000Z"
+    },
+    {
+        "items": [
+            {
                 "type": "CATEGORY",
                 "name": "Товары",
                 "id": "069cb8d7-bbdd-47d3-ad8f-82ef4c269df1",
@@ -218,6 +229,21 @@ def test_import():
 
         assert status == 200, f"Expected HTTP status code 200, got {status}"
 
+    print(f"Importing batch kek")
+    status, _ = request("/imports", method="POST", data=
+    [{"items": [
+          {
+              "type": "OFFER",
+              "name": "Товары",
+              "id": "069cb8d7-bbdd-47d3-ad8f-82ef4c269df1",
+              "parentId": None,
+              "price": 1234
+          }
+      ],
+      "updateDate": "2022-02-01T12:00:00.000Z"}])
+
+    assert status == 400, f"Expected HTTP status code 400, got {status}"
+
     print("Test import passed.")
 
 
@@ -265,14 +291,200 @@ def test_delete():
     status, _ = request(f"/nodes/{ROOT_ID}", json_response=True)
     assert status == 404, f"Expected HTTP status code 404, got {status}"
 
+    status, _ = request(f"/nodes/d515e43f-f3f6-4471-bb77-6b455017a2d2", json_response=True)
+    assert status == 404, f"Expected HTTP status code 404, got {status}"
+    status, _ = request(f"/nodes/d515e43f-f3f6-4471-bb77-6b455017a2d3", json_response=True)
+    assert status == 404, f"Expected HTTP status code 404, got {status}"
+
     print("Test delete passed.")
 
 
+
+IMPORT_BATCHES_WRONG = [
+    {
+        "items": [
+            {
+                "type": "CATEGOR",
+                "name": "Товары",
+                "id": "069cb8d7-bbdd-47d3-ad8f-84ef4c269df1",
+                "parentId": None
+            }
+        ],
+        "updateDate": "2022-02-01T12:00:00.000Z"
+    },
+    {
+        "items": [
+            {
+                "type": None,
+                "name": "Товары",
+                "id": "069cb8d7-bbdd-47d3-ad8f-85ef4c269df1",
+                "parentId": None
+            }
+        ],
+        "updateDate": "2022-02-01T12:00:00.000Z"
+    },
+    {
+        "items": [
+            {
+                "name": "Товары",
+                "id": "069cb8d7-bbdd-47d3-ad8f-86ef4c269df1",
+                "parentId": None
+            }
+        ],
+        "updateDate": "2022-02-01T12:00:00.000Z"
+    },
+    {
+        "items": [
+            {
+                "type": "CATEGORY",
+                "name": None,
+                "id": "069cb8d7-bbdd-47d3-ad8f-87ef4c269df1",
+                "parentId": None
+            }
+        ],
+        "updateDate": "2022-02-01T12:00:00.000Z"
+    },
+    {
+        "items": [
+            {
+                "type": "CATEGORY",
+                "id": "069cb8d7-bbdd-47d3-ad8f-88ef4c269df1",
+                "parentId": None
+            }
+        ],
+        "updateDate": "2022-02-01T12:00:00.000Z"
+    },
+    {
+        "items": [
+            {
+                "type": "CATEGORY",
+                "name": "Товары",
+                "id": None,
+                "parentId": None
+            }
+        ],
+        "updateDate": "2022-02-01T12:00:00.000Z"
+    },
+    {
+        "items": [
+            {
+                "type": "CATEGORY",
+                "name": "Товары",
+                "parentId": None
+            }
+        ],
+        "updateDate": "2022-02-01T12:00:00.000Z"
+    },
+    {
+        "items": [
+            {
+                "type": "CATEGOR",
+                "name": "Товары",
+                "id": "069cb8d7-bbdd-47d3-ad8f-89ef4c269df1",
+                "parentId": None,
+                "price": 123
+            }
+        ],
+        "updateDate": "2022-02-01T12:00:00.000Z"
+    },
+    {
+        "items": [
+            {
+                "type": "CATEGOR",
+                "name": "Товары",
+                "id": "069cb8d7-bbdd-47d3-ad8f-90ef4c269df1",
+                "parentId": None,
+            }
+        ],
+        "updateDate": "2022-02-01T12:00:00"
+    },
+    {
+        "items": [
+            {
+                "type": "CATEGOR",
+                "name": "Товары",
+                "id": "069cb8d7-bbdd-47d3-ad8f-91ef4c269df1",
+                "parentId": None,
+            }
+        ],
+        "updateDate": "2022-44-44T12:00:00"
+    },
+    {
+        "items": [
+            {
+                "type": "CATEGOR",
+                "name": "Товары",
+                "id": "069cb8d7-bbdd-47d3-ad8f-92ef4c269df1",
+                "parentId": None,
+            }
+        ],
+        "updateDate": None
+    },
+    {
+        "items": [
+            {
+                "type": "CATEGOR",
+                "name": "Товары",
+                "id": "069cb8d7-bbdd-47d3-ad8f-93ef4c269df1",
+                "parentId": None,
+            }
+        ],
+    },
+    {
+        "items": [
+            {
+                "type": "OFFER",
+                "name": "SASUNG",
+                "id": "069cb8d7-bbdd-47d3-ad8f-94ef4c269df1",
+                "parentId": None
+            }
+        ],
+        "updateDate": "2022-02-01T12:00:00.000Z"
+    },
+    {
+        "items": [
+            {
+                "type": "OFFER",
+                "name": "SASUNG",
+                "id": "069cb8d7-bbdd-47d3-ad8f-95ef4c269df1",
+                "parentId": None,
+                "price": None
+            }
+        ],
+        "updateDate": "2022-02-01T12:00:00.000Z"
+    },
+    {
+        "items": [
+            {
+                "type": "OFFER",
+                "name": "SASUNG",
+                "id": "069cb8d7-bbdd-47d3-ad8f-96ef4c269df1",
+                "parentId": None,
+                "price": -3
+            }
+        ],
+        "updateDate": "2022-02-01T12:00:00.000Z"
+    },
+]
+
+
+
+def test_wrong_import():
+    for index, batch in enumerate(IMPORT_BATCHES_WRONG):
+            print(f"Importing wrong batch {index}")
+            status, _ = request("/imports", method="POST", data=batch)
+
+            assert status == 400, f"Expected HTTP status code 400, got {status}"
+
+    print("Test wrong import passed.")
+
+
 def test_all():
+    test_wrong_import()
     test_import()
     test_nodes()
-    test_sales()
-    test_stats()
+    #test_sales()
+    #test_stats()
     test_delete()
 
 
