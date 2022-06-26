@@ -276,7 +276,7 @@ components:
           type: string
           format: date-time
           nullable: false
-          description: Время последнего обновления элемента. 
+          description: Время последнего обновления элемента.
           example: "2022-05-28T21:12:01.000Z"
         parentId:
           type: string
