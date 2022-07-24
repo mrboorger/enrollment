@@ -287,6 +287,9 @@ def test_stats():
 def test_delete():
     status, _ = request(f"/delete/{ROOT_ID}", method="DELETE")
     assert status == 200, f"Expected HTTP status code 200, got {status}"
+    
+    status, _ = request(f"/delete/069cb8d7-bbdd-47d3-ad8f-82ef4c269df5", method="DELETE")
+    assert status == 200, f"Expected HTTP status code 200, got {status}"
 
     status, _ = request(f"/nodes/{ROOT_ID}", json_response=True)
     assert status == 404, f"Expected HTTP status code 404, got {status}"

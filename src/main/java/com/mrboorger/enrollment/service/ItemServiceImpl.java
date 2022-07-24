@@ -1,59 +1,33 @@
 package com.mrboorger.enrollment.service;
 
-import com.mrboorger.enrollment.database.DataBase;
 import com.mrboorger.enrollment.model.Item;
+import com.mrboorger.enrollment.repositories.ItemsRepository;
 import com.mrboorger.enrollment.utils.Util;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.sql.ResultSet;
+import javax.validation.Valid;
 import java.sql.SQLException;
-import java.util.ArrayList;
+import java.util.Date;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 
 @Service
 public class ItemServiceImpl implements ItemService {
-    private final DataBase dataBase = DataBase.getInstance();
+    @Autowired
+    private ItemsRepository itemsRepository;
 
-    private static String GenImportQuery(Item item) {
-        StringBuilder query = new StringBuilder();
-
-        String parentIdStr = item.getParentId();
-        if (parentIdStr == null) {
-            parentIdStr = "null";
-        } else {
-            parentIdStr = "'" + parentIdStr + "'";
-        }
-
-        query.append("INSERT INTO items (id, type, name, parentId, price, updateDate) ");
-//        query.append(String.format("VALUES ('%s', '%s', '%s', %s, %s, STR_TO_DATE('%s','%%Y-%%m-%%dT%%T.%%fZ'))",
-        query.append(String.format("VALUES ('%s', '%s', '%s', %s, %s, '%s')",
-                item.getId(), item.getType(), item.getName(),
-                parentIdStr, item.getPrice(), Util.IsoDateTimeToString(item.getDate())));
-        query.append(String.format("ON DUPLICATE KEY UPDATE type='%s', name='%s', parentId=%s, price=%s, updateDate='%s'",
-                item.getType(), item.getName(),
-                parentIdStr, item.getPrice(), Util.IsoDateTimeToString(item.getDate())));
-
-        return query.toString();
-    }
-
-    private void deleteSubtree(String itemId) throws SQLException {
-        dataBase.executeUpdate(String.format("DELETE from items WHERE id='%s'", itemId));
-        ResultSet resultSet = dataBase.executeQuery(String.format("SELECT id FROM items WHERE parentId = '%s'", itemId));
-        ArrayList<String> children = new ArrayList<>();
-        while (resultSet.next()) {
-            children.add(resultSet.getString(1));
-        }
-        resultSet.close();
-
-        for (String child : children) {
-            deleteSubtree(child);
+    private void deleteSubtree(String itemId) {
+        itemsRepository.deleteById(itemId);
+        for (var childId : itemsRepository.findAllByParentId(itemId)) {
+            deleteSubtree(childId.getId());
         }
     }
 
-    class Info {
+    static class Info {
         public JSONObject jItem;
         public Long totalSum;
         public Long offersCnt;
@@ -65,39 +39,32 @@ public class ItemServiceImpl implements ItemService {
         }
     }
 
-    private Info getSubtree(String itemId) throws SQLException, JSONException {
-        ResultSet resultSet = dataBase.executeQuery(String.format("SELECT * FROM items WHERE id = '%s'", itemId));
+    private Info getSubtree(String itemId) throws JSONException, NoSuchElementException {
+        var item = itemsRepository.findById(itemId).get();
         Info info = new Info(new JSONObject(), 0L, 0L);
+
         JSONObject jItem = info.jItem;
 
-        if (!resultSet.next()) {
-            throw new JSONException("");
-        }
         jItem.put("id", itemId);
-        String parentId = resultSet.getString("parentId");
+        String parentId = item.getParentId();
 
-        jItem.put("type", resultSet.getString("type"));
-        jItem.put("name", resultSet.getString("name"));
+        jItem.put("type", item.getType());
+        jItem.put("name", item.getName());
         jItem.put("parentId", parentId == null ? JSONObject.NULL : parentId);
-        jItem.put("date", resultSet.getString("updateDate"));
+        jItem.put("date", Util.IsoDateTimeToString(item.getUpdateDate()));
 
         if (jItem.getString("type").equals("OFFER")) {
             jItem.put("children", JSONObject.NULL);
-            jItem.put("price", Long.valueOf(resultSet.getString("price")));
+            jItem.put("price", item.getPrice());
             return new Info(jItem, jItem.getLong("price"), 1L);
         }
 
         JSONArray jChildren = new JSONArray();
 
-        resultSet = dataBase.executeQuery(String.format("SELECT id FROM items WHERE parentId = '%s'", itemId));
-        ArrayList<String> children = new ArrayList<>();
-        while (resultSet.next()) {
-            children.add(resultSet.getString("id"));
-        }
-        resultSet.close();
+        var children =  itemsRepository.findAllByParentId(itemId);
 
-        for (String child : children) {
-            Info res = getSubtree(child);
+        for (Item child : children) {
+            Info res = getSubtree(child.getId());
             jChildren.put(res.jItem);
             if (res.offersCnt > 0) {
                 info.offersCnt += res.offersCnt;
@@ -114,24 +81,20 @@ public class ItemServiceImpl implements ItemService {
         return info;
     }
 
-    private boolean ifExist(String itemId) throws SQLException {
-        ResultSet resultSet = dataBase.executeQuery(String.format("SELECT id FROM items WHERE id='%s'", itemId));
-        return resultSet.next();
-    }
-
     // TODO: another exception
     @Override
     public void importItem(Item item) throws SQLException {
-        if (ifExist(item.getId()) && !Objects.equals(item.getType(), getOneItem(item.getId()).getType())) {
+        var optRepItem = itemsRepository.findById(item.getId());
+        if (optRepItem.isPresent() && !Objects.equals(item.getType(), optRepItem.get().getType())) {
             throw new SQLException("Forbidden to change type");
         }
 
-        dataBase.executeUpdate(GenImportQuery(item));
+        itemsRepository.save(item);
     }
 
     @Override
     public boolean deleteItem(String itemId) throws SQLException {
-        if (!ifExist(itemId)) {
+        if (!itemsRepository.existsById(itemId)) {
             return false;
         }
         deleteSubtree(itemId);
@@ -139,33 +102,20 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public JSONObject getItem(String itemId) throws SQLException, JSONException {
-        if (!ifExist(itemId)) {
+    public JSONObject getItem(String itemId) throws JSONException {
+        if (!itemsRepository.existsById(itemId)) {
             return null;
         }
         return getSubtree(itemId).jItem;
     }
 
     @Override
-    public void updateTime(String parentId, String updateDate) throws SQLException {
-        dataBase.executeUpdate(String.format("UPDATE items SET updateDate = '%s' WHERE id='%s'",
-                updateDate, parentId));
+    public void updateTime(String parentId, Date updateDate) {
+        itemsRepository.setStatusForItem(updateDate, parentId);
     }
 
     @Override
-    public Item getOneItem(String id) throws SQLException {
-        ResultSet rs = dataBase.executeQuery(String.format("SELECT * from items WHERE id='%s'", id));
-        rs.next();
-
-        Item item = new Item();
-
-        item.setId(id);
-        item.setType(rs.getString("type"));
-        item.setName(rs.getString("name"));
-        item.setParentId(rs.getString("parentId"));
-        item.setDate(Util.parseIsoDateTime(rs.getString("updateDate")));
-        item.setPrice(rs.getLong("price"));
-
-        return item;
+    public Item getOneItem(String id) throws NoSuchElementException {
+        return itemsRepository.findById(id).get();
     }
 }

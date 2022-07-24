@@ -5,6 +5,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.sql.SQLException;
+import java.util.Date;
 
 public interface ItemService {
     void importItem(Item item) throws SQLException;
@@ -13,7 +14,7 @@ public interface ItemService {
 
     JSONObject getItem(String itemId) throws SQLException, JSONException;
 
-    void updateTime(String parentId, String updateDate) throws SQLException;
+    void updateTime(String id, Date updateDate) throws SQLException;
 
     Item getOneItem(String id) throws SQLException;
 }
